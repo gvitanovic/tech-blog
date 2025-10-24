@@ -1,0 +1,126 @@
+---
+slug: go-bare-metal
+title: "Why Golang feels like it's bare metal language"
+authors: [gvitanovic]
+tags: [gvitanovic, go, golang, bare metal, metal, OS]
+---
+
+[golang](https://go.dev)
+
+## Intro
+Go does feel “close to the metal”, and your example with os.Stderr is spot-on.
+That’s because Go’s design sits between a high-level language like Python or JavaScript and a low-level systems language like C.
+
+## Let’s unpack exactly why Go gives that feeling:
+
+<!-- truncate -->
+
+![gopher](/img/go.png)
+
+### Go has direct access to OS primitives
+
+When you use:
+
+```go
+os.Stderr
+````
+
+You’re not dealing with an abstract “stream” like in Python —
+you’re dealing with an actual file descriptor (fd = 2 on Unix).
+
+Go’s os package is a thin wrapper over system calls like read(), write(), open(), and close() in libc.
+Under the hood, os.Stderr is literally:
+
+```go
+var Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+```
+That's a Go struct wrapping a real Unix file descriptor
+
+### Minimal runtime, no virtual machine
+
+Go binaries compile directly to machine code — there’s no VM or interpreter like in JavaScript or Python.
+When you run:
+```go
+go build
+```
+You get a self-contained ELF (or PE/Mach-O) binary that you can run without external dependencies.
+
+That’s why Go feels “bare metal”: the code executes directly on the OS, not through a runtime layer.
+
+### Explicit concurrency with goroutines and channels
+
+Go’s concurrency primitives (**goroutines**, **channels**, **select**) map efficiently to system threads and epoll/kqueue.
+You see and feel how things run at the OS scheduling level — without needing to manage threads yourself.
+
+That gives developers the sensation of controlling the system like C — but with far less boilerplate.
+
+### Manual control over I/O, memory, and syscalls
+
+Go lets you:
+
+Use syscall or golang.org/x/sys/unix to call system functions directly.
+
+Work with unsafe.Pointer for raw memory manipulation.
+
+Use os.File.Fd() to access the underlying file descriptor for socket or pipe operations.
+
+Example:
+```go
+f, _ := os.Open("file.txt")
+fd := f.Fd()
+fmt.Println("File descriptor:", fd)
+```
+This gives the same kind of control you’d have in C — but with Go’s safety and tooling.
+
+## Simplicity by design, not abstraction
+
+Go’s standard library avoids hiding the OS layer behind large abstractions.
+For example:
+
+net.Listener literally wraps system sockets.
+
+os.File is just a struct around an integer fd.
+
+Even http.Server eventually uses Read and Write syscalls on file descriptors.
+
+You’re never far from the system.
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+    "syscall"
+)
+
+func main() {
+    fd := int(os.Stderr.Fd())
+    syscall.Write(fd, []byte("writing directly to stderr via syscall\n"))
+
+    fmt.Fprintf(os.Stderr, "via os.Stderr abstraction\n")
+}
+```
+Booth lines writes to the same file descriptor - one via raw syscall, on with Go's weapper.
+
+
+## Why Go feels close to the metal
+
+Go gives a “systems-level” feel because it’s built directly on top of the operating system, not on a virtual machine or heavy runtime.
+
+Direct OS integration: os.Stderr, os.File, and syscall map to real file descriptors and system calls (read, write, open, etc.).
+
+Native binaries: Go compiles straight to machine code, so programs run directly on the OS.
+
+Thin abstractions: The standard library wraps system APIs lightly instead of hiding them behind complex frameworks.
+
+Explicit concurrency: Goroutines and channels run close to the OS thread scheduler for predictable performance.
+
+Memory and system control: You can still access low-level features (unsafe, raw fds) when needed.
+
+### In essence:
+
+Go feels “close to the metal” because it gives you the power of C (direct access to OS and hardware-level concepts)
+while providing the safety and simplicity of a higher-level language.
+
+Would you like me to show a short visual diagram of how a Go program sits between your code, the OS, and hardware — compared to Python or Node.js?

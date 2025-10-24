@@ -23,3 +23,14 @@ slorber:
     linkedin: sebastienlorber
     github: slorber
     newsletter: https://thisweekinreact.com
+
+
+gvitanovic:
+  name: Gaja Vitanovic
+  title: Sir Bit Manipulator a.k.a. [mucko|bit|dzubre]
+  url: https://linkedin.com/in/gvitanovic
+  image_url: https://github.com/gvitanovic.png
+  page: true
+  socials:
+    linkedin: gvitanovic
+    github: gvitanovic
